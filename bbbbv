@@ -1832,6 +1832,7 @@ function ElementFunction:AddSubTab(SubTabConfig)
     else
         SubTabsHolder = Container:FindFirstChild("SubTabsHolder")
     end
+    
     local SubTabContainer = SetChildren(SetProps(MakeElement("TFrame"), {
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
@@ -1844,7 +1845,7 @@ function ElementFunction:AddSubTab(SubTabConfig)
         MakeElement("List", 0, 6),
         MakeElement("Padding", 0, 0, 0, 5)
     })
-    local isSelected = isFirstSubTab
+    
     local SubTabButton = AddThemeObject(SetChildren(SetProps(MakeElement("Button"), {
         Size = UDim2.new(0, 120, 0, 30),
         Parent = SubTabsHolder.ButtonHolder,
@@ -1880,20 +1881,29 @@ function ElementFunction:AddSubTab(SubTabConfig)
         ZIndex = 2,
         Name = "Ripple"
     })
-    function UpdateButtonSize()
+    
+    local isSelected = isFirstSubTab
+    
+    local function UpdateButtonSize()
         local textSize = SubTabButton.Title.TextBounds.X + 24
         SubTabButton.Size = UDim2.new(0, math.max(textSize, 70), 0, 30)
     end
+    
     UpdateButtonSize()
-    function PlayRippleEffect()
-        RippleEffect.ImageTransparency = 0.7
-        RippleEffect.Size = UDim2.new(0, 0, 0, 0)
-        TweenService:Create(RippleEffect, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1.5, 0, 1.5, 0),
-            ImageTransparency = 1
-        }):Play()
+    
+    local function PlayRippleEffect(targetButton)
+        local ripple = targetButton:FindFirstChild("Ripple")
+        if ripple then
+            ripple.ImageTransparency = 0.7
+            ripple.Size = UDim2.new(0, 0, 0, 0)
+            TweenService:Create(ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1.5, 0, 1.5, 0),
+                ImageTransparency = 1
+            }):Play()
+        end
     end
-    function SelectSubTab()
+    
+    local function SelectSubTab()
         for _, Button in pairs(SubTabsHolder.ButtonHolder:GetChildren()) do
             if Button:IsA("TextButton") and Button ~= SubTabButton then
                 TweenService:Create(Button.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
@@ -1911,9 +1921,11 @@ function ElementFunction:AddSubTab(SubTabConfig)
             end
         end
         
-        PlayRippleEffect()
         isSelected = true
         SubTabButton:SetAttribute("Selected", true)
+        
+        PlayRippleEffect(SubTabButton)
+        
         TweenService:Create(SubTabButton.Title, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
         TweenService:Create(SubTabButton.Indicator, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0,
@@ -1948,18 +1960,19 @@ function ElementFunction:AddSubTab(SubTabConfig)
             end
         end)
     end
+    
     AddConnection(SubTabButton.MouseEnter, function()
-        if not isSelected then
+        if not SubTabButton:GetAttribute("Selected") then
             TweenService:Create(SubTabButton.Title, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {TextTransparency = 0.2}):Play()
-            
             TweenService:Create(SubTabButton.Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
                 BackgroundTransparency = 0.6,
                 Size = UDim2.new(0.4, 0, 0, 2)
             }):Play()
         end
     end)
+    
     AddConnection(SubTabButton.MouseLeave, function()
-        if not isSelected then
+        if not SubTabButton:GetAttribute("Selected") then
             TweenService:Create(SubTabButton.Title, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
             TweenService:Create(SubTabButton.Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
                 BackgroundTransparency = 1,
@@ -1980,12 +1993,15 @@ function ElementFunction:AddSubTab(SubTabConfig)
         }):Play()
     end)
     
-    AddConnection(SubTabButton.MouseButton1Click, SelectSubTab)
+    AddConnection(SubTabButton.MouseButton1Click, function()
+        SelectSubTab()
+    end)
     
     if isFirstSubTab then
         SubTabButton:SetAttribute("Selected", true)
         SelectSubTab()
     end
+    
     local SubTabFunction = {}
     for i, v in next, GetElements(SubTabContainer) do
         SubTabFunction[i] = v
